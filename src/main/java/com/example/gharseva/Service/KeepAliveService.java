@@ -12,7 +12,7 @@ public class KeepAliveService {
     @Scheduled(cron = "0 */9 * * * *") // every 9 minutes
     public void pingServer() {
         try {
-            String url = "https://my-app/ping";
+            String url = "https://gharseva-yc3k.onrender.com/ping";
 
             String response = restTemplate.getForObject(url, String.class);
 
