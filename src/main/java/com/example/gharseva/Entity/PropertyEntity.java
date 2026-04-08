@@ -46,6 +46,6 @@ public class PropertyEntity {
     private List<String> imageUrls = new ArrayList<>();
 
     @ManyToOne
-    UserEntity owner;
+    UserEntity ownerId;
 
 }
