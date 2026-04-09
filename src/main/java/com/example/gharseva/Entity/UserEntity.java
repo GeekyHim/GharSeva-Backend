@@ -1,6 +1,7 @@
 package com.example.gharseva.Entity;
 
 import com.example.gharseva.Enum.Roles;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -28,7 +29,7 @@ public class UserEntity {
     private String email;
 
     @NotBlank
-    @Size(min = 8, max = 16)
+    @JsonIgnore
     private String password;
 
     @NotBlank

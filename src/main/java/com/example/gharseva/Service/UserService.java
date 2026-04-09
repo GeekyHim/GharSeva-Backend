@@ -1,9 +1,17 @@
 package com.example.gharseva.Service;
 
+import com.example.gharseva.Dto.AuthResponseDto;
+import com.example.gharseva.Dto.LoginRequestDto;
+import com.example.gharseva.Dto.RegisterRequestDto;
+import com.example.gharseva.Enum.Roles;
+import com.example.gharseva.Exception.BadRequestException;
+import com.example.gharseva.Exception.ConflictException;
+import com.example.gharseva.Exception.ResourceNotFoundException;
 import com.example.gharseva.Entity.UserEntity;
 import com.example.gharseva.Repository.UserRepository;
+import com.example.gharseva.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
-//import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -11,42 +19,58 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
-//    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    // REGISTER USER
-    public UserEntity registerUser(UserEntity user) {
+    public AuthResponseDto registerUser(RegisterRequestDto request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
 
-        // 1. Check duplicate email
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("Email already registered");
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            throw new ConflictException("Email already registered");
         }
 
-        // 2. Encrypt password
-//        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        UserEntity user = UserEntity.builder()
+                .name(request.getName())
+                .email(normalizedEmail)
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phone(request.getPhone())
+                .role(Roles.TENANT)
+                .build();
 
-        // 3. Save user
-        return userRepository.save(user);
+        UserEntity savedUser = userRepository.save(user);
+
+        return AuthResponseDto.builder()
+                .message("User registered successfully")
+                .status("SUCCESS")
+                .userId(savedUser.getId())
+                .token(null)
+                .build();
     }
 
-    // GET USER BY ID
     public UserEntity getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
-    public String loginUser(String email, String password) {
+    public AuthResponseDto loginUser(LoginRequestDto request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
 
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        UserEntity user = userRepository.findByEmailIgnoreCase(normalizedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-//        if (!passwordEncoder.matches(password, user.getPassword())) {
-//            throw new RuntimeException("Invalid credentials");
-//        }
-
-        if (!password.equals(user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BadRequestException("Invalid credentials");
         }
 
-        return "Login successful";
+        return AuthResponseDto.builder()
+                .message("Login successful")
+                .status("SUCCESS")
+                .userId(user.getId())
+                .token(jwtUtil.generateToken(user))
+                .build();
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
     }
 }

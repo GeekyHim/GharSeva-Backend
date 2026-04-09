@@ -23,7 +23,7 @@ public class PropertyEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    boolean availabilityStatus;
+    private boolean availabilityStatus;
 
     @NotBlank
     private String title;
@@ -45,7 +45,8 @@ public class PropertyEntity {
     @Column(length = 1000)
     private List<String> imageUrls = new ArrayList<>();
 
-    @ManyToOne
-    UserEntity ownerId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private UserEntity owner;
 
 }
